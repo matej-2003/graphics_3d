@@ -52,10 +52,10 @@ const vs = [
 const fs = [
 	[0, 1, 2, 3],
 	[4, 5, 6, 7],
-	[0, 4],
-	[1, 5],
-	[2, 6],
-	[3, 7],
+	[0, 1, 5, 4],
+	[1, 2, 6, 5],
+	[2, 3, 7, 6],
+	[3, 0, 4, 7],
 ]
 
 function translate_z({x, y, z}, dz) {
@@ -83,6 +83,23 @@ function line(p1, p2) {
 }
 
 
+function fillFace(vertices, proj) {
+	ctx.fillStyle = FOREGROUND;
+	ctx.beginPath();
+	let first = proj(vs[vertices[0]]);
+	ctx.moveTo(first.x, first.y);
+
+	for (let i=1; i<vertices.length; i++) {
+		const v = proj(vs[vertices[i]]);
+		ctx.lineTo(v.x, v.y);
+	}
+
+	ctx.closePath();
+	ctx.fill();
+}
+
+
+
 const FPS = 30;
 let dz = 1;
 let angle = 0;
@@ -92,10 +109,6 @@ function frame() {
 	// dz += 1 * dt;
 	clear()
 	angle += Math.PI*dt;
-
-	// for (const v of vs) {
-	// 	point(screen(project(translate_z(rotate_xz(v, angle), dz))))
-	// }
 
 	for (const f of fs) {
 		for (let i=0; i<f.length; i++) {
@@ -107,9 +120,11 @@ function frame() {
 				screen(project(translate_z(rotate_xz(b, angle), dz)))
 			)
 		}
+
+		fillFace(f, (x) => screen(project(translate_z(rotate_xz(x, angle), dz))));
 	}
 
-	setTimeout(frame, 1000/FPS);
+	// setTimeout(frame, 1000/FPS);
 }
 
-setTimeout(frame, 1000/FPS);
+setInterval(frame, 1000/FPS);

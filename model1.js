@@ -68,7 +68,7 @@ function translate_y({ x, y, z }, dy) {
 
 function line(p1, p2) {
 	// ctx.lineWidth = 2;
-	ctx.strokeStyle = FOREGROUND;
+	ctx.strokeStyle = "red";
 	ctx.beginPath();
 	ctx.moveTo(p1.x, p1.y);
 	ctx.lineTo(p2.x, p2.y);
@@ -76,15 +76,36 @@ function line(p1, p2) {
 }
 
 
+function fillFace(vs_index, proj) {
+	ctx.fillStyle = FOREGROUND;
+	ctx.beginPath();
+	let first = proj(teapot_vs[vs_index[0]]);
+	ctx.moveTo(first.x, first.y);
+
+	for (let i=1; i< vs_index.length; i++) {
+		const v = proj(teapot_vs[vs_index[i]]);
+		ctx.lineTo(v.x, v.y);
+	}
+
+	ctx.closePath();
+	ctx.fill();
+}
+
+// function random_color() {
+// 	return `rgb(${}, ${}, ${})`;
+// }
+
+
 const FPS = 30;
-const rotation_speed = 0.50;
+const rotation_speed = 0.09;
 let dz = 5;
 let angle = 0;
+let teapot_vs = [];
 
-let vs = [];
+let vertex_index = 10;
 
-for (const [x, y, z] of tepot_vs) {
-	vs.push(translate_y(rotate_zy({ x: x, y: y, z: z }, Math.PI / 2), -2))
+for (const [x, y, z] of tepot_vertices) {
+	teapot_vs.push(translate_y(rotate_zy({ x: x, y: y, z: z }, Math.PI / 2), -3))
 }
 
 function frame() {
@@ -93,46 +114,26 @@ function frame() {
 	clear()
 	angle += Math.PI * dt * rotation_speed;
 
-	// for (const v of vs) {
+	// for (let j = 0; j < teapot_vs.length; j++) {
+	// 	let v = teapot_vs[j];
 	// 	point(screen(project(translate_z(rotate_xz(v, angle), dz))))
 	// }
 
-	for (const f of teapot_faces) {
+	for (let j = 0; j < teapot_faces.length; j++) {
+		let f = teapot_faces[j];
 		for (let i = 0; i < f.length; i++) {
-			const a = vs[f[i] - 1];
-			const b = vs[f[(i + 1) % f.length] - 1];
+			const a = teapot_vs[f[i] - 1];
+			const b = teapot_vs[f[(i + 1) % f.length] - 1];
 
 			line(
 				screen(project(translate_z(rotate_xz(a, angle), dz))),
 				screen(project(translate_z(rotate_xz(b, angle), dz)))
 			)
 		}
-	}
 
-	// setTimeout(frame, 1000 / FPS);
+		// fillFace(f, (x) => screen(project(translate_z(rotate_xz(x, angle), dz))));
+	}
 }
 
-// setTimeout(frame, 1000 / FPS);
 
-
-var videoStream = game.captureStream(30);
-var mediaRecorder = new MediaRecorder(videoStream);
-
-var chunks = [];
-mediaRecorder.ondataavailable = function (e) {
-	chunks.push(e.data);
-};
-
-mediaRecorder.onstop = function (e) {
-	var blob = new Blob(chunks, { 'type': 'video/mp4' });
-	chunks = [];
-	var videoURL = URL.createObjectURL(blob);
-	capture.src = videoURL;
-};
-mediaRecorder.ondataavailable = function (e) {
-	chunks.push(e.data);
-};
-
-mediaRecorder.start();
-setInterval(frame, 1000 / FPS);
-setTimeout(function () { mediaRecorder.stop(); }, 5000);
+setInterval(frame, 1000/FPS);
