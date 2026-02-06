@@ -4,8 +4,8 @@ const s = 2;
 
 console.log(game);
 
-game.width = 500;
-game.height = 500;
+game.width = 800;
+game.height = 800;
 
 const ctx = game.getContext("2d");
 console.log(ctx);
@@ -19,7 +19,6 @@ function point({ x, y }) {
 	ctx.fillStyle = FOREGROUND;
 	ctx.fillRect(x - s / 2, y - s / 2, s, s);
 }
-
 
 function screen(p) {
 	// -1 .. 1 => 0 .. 1 => 0 .. w/h
@@ -76,24 +75,35 @@ function line(p1, p2) {
 }
 
 
-function fillFace(vs_index, proj) {
-	ctx.fillStyle = FOREGROUND;
-	ctx.beginPath();
-	let first = proj(teapot_vs[vs_index[0]]);
-	ctx.moveTo(first.x, first.y);
+function load_file(filename) {
+	fetch(filename)
+		.then(response => response.json())
+		.then(jsonResponse => console.log(jsonResponse));
+}
 
-	for (let i=1; i< vs_index.length; i++) {
+function getRandomInt(max) {
+	return Math.floor(Math.random() * max);
+}
+
+
+function random_color() {
+	return `rgb(${getRandomInt(255)}, ${getRandomInt(255)}, ${getRandomInt(255)})`;
+}
+
+
+function fillFace(vs_index, proj) {
+	ctx.fillStyle = colors[j];
+	ctx.beginPath();
+	
+	const a_proj = proj(teapot_vs[f[0] - 1]);
+	ctx.moveTo(a_proj.x, a_proj.y);
+	for (let i = 1; i < vs_index.length; i++) {
 		const v = proj(teapot_vs[vs_index[i]]);
 		ctx.lineTo(v.x, v.y);
 	}
-
 	ctx.closePath();
 	ctx.fill();
 }
-
-// function random_color() {
-// 	return `rgb(${}, ${}, ${})`;
-// }
 
 
 const FPS = 30;
@@ -104,8 +114,14 @@ let teapot_vs = [];
 
 let vertex_index = 10;
 
-for (const [x, y, z] of tepot_vertices) {
+for (const [x, y, z] of teapot_vertices) {
 	teapot_vs.push(translate_y(rotate_zy({ x: x, y: y, z: z }, Math.PI / 2), -3))
+}
+
+let colors = [];
+
+for (let j = 0; j < teapot_faces.length; j++) {
+	colors.push(random_color());
 }
 
 function frame() {
@@ -121,19 +137,38 @@ function frame() {
 
 	for (let j = 0; j < teapot_faces.length; j++) {
 		let f = teapot_faces[j];
-		for (let i = 0; i < f.length; i++) {
-			const a = teapot_vs[f[i] - 1];
-			const b = teapot_vs[f[(i + 1) % f.length] - 1];
+		// for (let i = 0; i < f.length; i++) {
+		// 	const a = teapot_vs[f[i] - 1];
+		// 	const b = teapot_vs[f[(i + 1) % f.length] - 1];
 
-			line(
-				screen(project(translate_z(rotate_xz(a, angle), dz))),
-				screen(project(translate_z(rotate_xz(b, angle), dz)))
-			)
-		}
+		// 	line(
+		// 		screen(project(translate_z(rotate_xz(a, angle), dz))),
+		// 		screen(project(translate_z(rotate_xz(b, angle), dz)))
+		// 	)
+		// }
 
 		// fillFace(f, (x) => screen(project(translate_z(rotate_xz(x, angle), dz))));
+
+
+		const a = teapot_vs[f[0] - 1];
+		const b = teapot_vs[f[1] - 1];
+		const c = teapot_vs[f[2] - 1];
+
+		const a_proj = screen(project(translate_z(rotate_xz(a, angle), dz)));
+		const b_proj = screen(project(translate_z(rotate_xz(b, angle), dz)));
+		const c_proj = screen(project(translate_z(rotate_xz(c, angle), dz)));
+
+		ctx.fillStyle = colors[j];
+		ctx.beginPath();
+
+		ctx.moveTo(a_proj.x, a_proj.y);
+		ctx.lineTo(b_proj.x, b_proj.y);
+		ctx.lineTo(c_proj.x, c_proj.y);
+
+		ctx.closePath();
+		ctx.fill();
 	}
 }
 
 
-setInterval(frame, 1000/FPS);
+setInterval(frame, 1000 / FPS);
