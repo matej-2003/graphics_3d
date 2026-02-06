@@ -75,10 +75,37 @@ function line(p1, p2) {
 }
 
 
-function load_file(filename) {
-	fetch(filename)
-		.then(response => response.json())
-		.then(jsonResponse => console.log(jsonResponse));
+async function load_file(filename) {
+	let vertices = [];
+	let faces = [];
+
+	let file = await fetch(filename);
+	let file_text = await file.text();
+	file_lines = file_text.split("\n");
+
+
+	for (let line of file_lines) {
+		line_tokens = line.split(" ");
+		if (line_tokens[0] == "v") {
+			let vertex = {
+				x: parseFloat(line_tokens[1]),
+				y: parseFloat(line_tokens[2]),
+				z: parseFloat(line_tokens[3]),
+			};
+			vertices.push(vertex);
+			// console.log(vertex)
+
+		} else if (line_tokens[0] == "f") {
+			let face = [
+				parseFloat(line_tokens[1].split("/")[0]) - 1,
+				parseFloat(line_tokens[2].split("/")[0]) - 1,
+				parseFloat(line_tokens[3].split("/")[0]) - 1,
+			];
+			faces.push(face);
+		}
+	}
+
+	return [vertices, faces];
 }
 
 function getRandomInt(max) {
@@ -91,14 +118,14 @@ function random_color() {
 }
 
 
-function fillFace(vs_index, proj) {
-	ctx.fillStyle = colors[j];
+function fillFace(face, proj, color) {
+	ctx.fillStyle = color;
 	ctx.beginPath();
-	
-	const a_proj = proj(teapot_vs[f[0] - 1]);
+
+	const a_proj = proj(teapot_vs[face[0]]);
 	ctx.moveTo(a_proj.x, a_proj.y);
-	for (let i = 1; i < vs_index.length; i++) {
-		const v = proj(teapot_vs[vs_index[i]]);
+	for (let i = 1; i < face.length; i++) {
+		const v = proj(teapot_vs[face[i]]);
 		ctx.lineTo(v.x, v.y);
 	}
 	ctx.closePath();
@@ -106,23 +133,35 @@ function fillFace(vs_index, proj) {
 }
 
 
+
+
 const FPS = 30;
 const rotation_speed = 0.09;
-let dz = 5;
-let angle = 0;
-let teapot_vs = [];
+let dz = 10;
+let scale = 1;
 
+let angle = 0;
+var teapot_vertices, teapot_faces;
+let colors = [];
+let teapot_vs = [];
 let vertex_index = 10;
 
-for (const [x, y, z] of teapot_vertices) {
-	teapot_vs.push(translate_y(rotate_zy({ x: x, y: y, z: z }, Math.PI / 2), -3))
+
+async function start() {
+	// [teapot_vertices, teapot_faces] = await load_file("Zeppelin_LZ_127.obj");
+	[teapot_vertices, teapot_faces] = await load_file("utah_teapot.obj");
+	console.log(teapot_vertices, teapot_faces);
+
+
+	for (let i = 0; i < teapot_vertices.length; i++) {
+		teapot_vs.push(translate_y(rotate_zy(teapot_vertices[i], Math.PI / 2), -3))
+	}
+
+	for (let j = 0; j < teapot_faces.length; j++) {
+		colors.push(random_color());
+	}
 }
 
-let colors = [];
-
-for (let j = 0; j < teapot_faces.length; j++) {
-	colors.push(random_color());
-}
 
 function frame() {
 	const dt = 1 / FPS;
@@ -136,39 +175,28 @@ function frame() {
 	// }
 
 	for (let j = 0; j < teapot_faces.length; j++) {
-		let f = teapot_faces[j];
-		// for (let i = 0; i < f.length; i++) {
-		// 	const a = teapot_vs[f[i] - 1];
-		// 	const b = teapot_vs[f[(i + 1) % f.length] - 1];
+		let face = teapot_faces[j];
+		for (let i = 0; i < face.length; i++) {
+			const a = teapot_vs[face[i]];
+			const b = teapot_vs[face[(i + 1) % face.length]];
 
-		// 	line(
-		// 		screen(project(translate_z(rotate_xz(a, angle), dz))),
-		// 		screen(project(translate_z(rotate_xz(b, angle), dz)))
-		// 	)
-		// }
+			line(
+				screen(project(translate_z(rotate_xz(a, angle), dz))),
+				screen(project(translate_z(rotate_xz(b, angle), dz)))
+			)
+		}
 
-		// fillFace(f, (x) => screen(project(translate_z(rotate_xz(x, angle), dz))));
-
-
-		const a = teapot_vs[f[0] - 1];
-		const b = teapot_vs[f[1] - 1];
-		const c = teapot_vs[f[2] - 1];
-
-		const a_proj = screen(project(translate_z(rotate_xz(a, angle), dz)));
-		const b_proj = screen(project(translate_z(rotate_xz(b, angle), dz)));
-		const c_proj = screen(project(translate_z(rotate_xz(c, angle), dz)));
-
-		ctx.fillStyle = colors[j];
-		ctx.beginPath();
-
-		ctx.moveTo(a_proj.x, a_proj.y);
-		ctx.lineTo(b_proj.x, b_proj.y);
-		ctx.lineTo(c_proj.x, c_proj.y);
-
-		ctx.closePath();
-		ctx.fill();
+		fillFace(face, (x) => screen(project(translate_z(rotate_xz(x, angle), dz))), colors[j]);
 	}
 }
 
+async function main() {
+	await start();
+	setInterval(frame, 1000 / FPS);
+};
 
-setInterval(frame, 1000 / FPS);
+onwheel = (event) => {
+	dz += event.deltaY * -0.005;
+	dz = Math.min(Math.max(0.001, dz), 100);
+}
+main();
