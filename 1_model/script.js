@@ -75,7 +75,7 @@ function line(p1, p2) {
 }
 
 
-async function load_file(filename) {
+async function load_model(filename) {
 	let vertices = [];
 	let faces = [];
 
@@ -148,8 +148,8 @@ let vertex_index = 10;
 
 
 async function start() {
-	[teapot_vertices, teapot_faces] = await load_file("Zeppelin_LZ_127.obj");
-	// [teapot_vertices, teapot_faces] = await load_file("utah_teapot.obj");
+	// [teapot_vertices, teapot_faces] = await load_model("/models/Zeppelin_LZ_127.obj");
+	[teapot_vertices, teapot_faces] = await load_model("/models/teapot.obj");
 	console.log(teapot_vertices, teapot_faces);
 
 
